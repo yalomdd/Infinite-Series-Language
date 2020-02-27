@@ -6,23 +6,27 @@ import           Data.Complex
 import           Data.Ratio
 import           Text.Printf
 
-
+-- array representation of a polynomial
 type Poly a = [a]
 
+-- z is representing the real unit in a power series form
 z :: Num a => Poly a
 z = [0,1] ++ repeat 0
 
-
+-- i is represting the imaginary unit in a power series form
 i :: RealFloat a => Poly (Complex a)
 i = [0 :+ 1] ++ repeat 0
 
+-- factorial helper function
 fact :: Integer -> Integer
 fact 0 = 1
 fact n = n * fact (n - 1)
 
+-- this represents the power series of e ^ m
 e :: Fractional a => a -> Poly a
 e m = map (\n -> (m ^ n) / fromIntegral (fact n)) [0..]
 
+--this represents cosin as a power series
 co :: Fractional a =>  Poly a
 co = map f [0..]
   where
@@ -31,33 +35,39 @@ co = map f [0..]
       | n `mod` 4 == 0 = (1 / fromIntegral (fact n) )
       | n `mod` 4 == 2 = (-1 / fromIntegral (fact n) )
       | otherwise      = 0
-
+-- this represents sin as a power seires
 si :: Fractional a =>  Poly a
 si = -(d co)
 
+-- d is the derivitave function
 d :: Num a => Poly a -> Poly a
 d (x:xs) = de (*) 1 xs
 
+-- int is the integral function
 int :: Fractional a => Poly a -> Poly a
 int xs = 1 : de (/) 1 xs
 
+-- de is a helper function to compute integrals and derivates
 de :: Num a => (a -> a -> a) -> a -> Poly a -> Poly a
 de f n []     =  []
 de f n (x:xs) =  f n x : de f (n + 1) xs
 
+-- this defines the cauchy product of two power series
+-- https://en.wikipedia.org/wiki/Cauchy_product
 cauchyProd :: Num a => Poly a -> Poly a -> Poly a
 cauchyProd (x:xs) b@(y:ys) = x * y : map (\a -> a * x) ys + xs * b
 
+-- defines division between power series
 ddiv :: Fractional a => Poly a -> Poly a -> Poly a
 ddiv (x:xs) (y:ys) = qs
   where
     qs = x / y : map (\x -> x / y) (xs - qs * ys)
 
+-- # defines the functional composition of two power series
 (#) :: Num a => Poly a -> Poly a -> Poly a
 (x:xs) # g@(y:ys) = x : (ys * (xs # g))
 
--- Used https://www.cs.dartmouth.edu/~doug/powser1.html#composition to figure out cauchyProd, ddiv, and #
-
+-- allows us to inherit the numeric interface
 instance Num a => Num (Poly a) where
     (+)           = zipWith (+)
     (-)           = zipWith (-)
@@ -65,11 +75,13 @@ instance Num a => Num (Poly a) where
     abs           = map abs
     signum        = map signum
     fromInteger n = [fromInteger n,0] ++ repeat 0
-
+    
+-- allows us to inherit the fractional interface
 instance Fractional a => Fractional (Poly a) where
    fromRational n = [fromRational n,0] ++ repeat 0
    (/)            =  ddiv
-
+  
+-- the rest defines and builds pretty printing defines pretty printing
 class Pretty a where
   pretty, sign :: a -> String
 
